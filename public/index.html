@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hackard Law - Voice Agent Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0e1a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 32px 40px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header h1 span { color: #a78bfa; }
+  .header .subtitle { color: #888; font-size: 14px; margin-top: 4px; }
+  .badge {
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: #ccc;
+    background: transparent;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 80px 0;
+    color: #888;
+    font-size: 18px;
+  }
+  .loading .spinner {
+    display: inline-block;
+    width: 32px; height: 32px;
+    border: 3px solid #333;
+    border-top-color: #a78bfa;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* KPI Cards */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 24px 20px;
+    text-align: center;
+  }
+  .kpi-card .value {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .kpi-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #888;
+  }
+  .kpi-green { color: #34d399; }
+  .kpi-red { color: #f87171; }
+  .kpi-yellow { color: #fbbf24; }
+  .kpi-purple { color: #a78bfa; }
+  .kpi-white { color: #fff; }
+
+  /* Section cards */
+  .section-card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .section-title .dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .dot-blue { background: #60a5fa; }
+  .dot-red { background: #f87171; }
+  .dot-green { background: #34d399; }
+  .dot-purple { background: #a78bfa; }
+
+  /* Sentiment row */
+  .sentiment-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .sentiment-row .stat { font-size: 14px; }
+
+  /* Tier breakdown */
+  .tier-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .tier-item { font-size: 14px; }
+
+  /* Table */
+  .calls-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .calls-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    color: #888;
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 1px solid #1e293b;
+  }
+  .calls-table tbody tr {
+    border-bottom: 1px solid #1a1f2e;
+  }
+  .calls-table tbody tr:hover {
+    background: #1a1f2e;
+  }
+  .calls-table td {
+    padding: 12px;
+    vertical-align: top;
+    max-width: 320px;
+  }
+  .calls-table .call-id-link {
+    color: #60a5fa;
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 12px;
+  }
+  .calls-table .call-id-link:hover { text-decoration: underline; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-tier1 { background: #1e3a2f; color: #34d399; }
+  .tag-tier2 { background: #3b2f1e; color: #fbbf24; }
+  .tag-tier3 { background: #3b1e1e; color: #f87171; }
+  .tag-pi { background: #2e1e3b; color: #c084fc; }
+  .tag-pos { background: #1e3a2f; color: #34d399; }
+  .tag-neut { background: #1e293b; color: #94a3b8; }
+  .tag-neg { background: #3b1e1e; color: #f87171; }
+
+  .group-header td {
+    padding: 10px 12px;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #0d1117;
+    color: #94a3b8;
+  }
+
+  .summary-text {
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* Day filter tabs */
+  .day-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .day-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid #1e293b;
+    background: transparent;
+    color: #888;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .day-tab:hover { border-color: #a78bfa; color: #e0e0e0; }
+  .day-tab.active { background: #a78bfa; color: #fff; border-color: #a78bfa; }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  /* Success pattern cards */
+  .pattern-card {
+    background: #0d1117;
+    border: 1px solid #1a3a2a;
+    border-left: 3px solid #34d399;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .pattern-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e0e0e0;
+    margin-bottom: 6px;
+  }
+  .pattern-card .pattern-stat {
+    color: #34d399;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .pattern-card .pattern-desc {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  /* Bar chart */
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 160px;
+    padding-top: 20px;
+  }
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .bar-val {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .bar {
+    width: 100%;
+    max-width: 36px;
+    border-radius: 4px 4px 0 0;
+    min-height: 4px;
+    transition: height 0.3s;
+  }
+  .bar-label {
+    font-size: 11px;
+    color: #888;
+    margin-top: 6px;
+  }
+  .bar-note {
+    font-size: 12px;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  /* Repeat callers table */
+  .repeat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .repeat-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    color: #888;
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 1px solid #1e293b;
+  }
+  .repeat-table tbody tr {
+    border-bottom: 1px solid #1a1f2e;
+  }
+  .repeat-table td {
+    padding: 10px 12px;
+    vertical-align: top;
+  }
+  .repeat-table .success-count {
+    background: #1a3a2a;
+    color: #34d399;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(3, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    body { padding: 20px 16px; }
+  }
+  @media (max-width: 600px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Hackard Law <span>Voice Agent</span></h1>
+    <div class="subtitle" id="dateRange">Loading...</div>
+  </div>
+  <div class="badge">TargetDial</div>
+</div>
+
+<div id="loadingState" class="loading">
+  <div class="spinner"></div>
+  <div>Fetching call data from Retell...</div>
+</div>
+
+<div id="dashboard" style="display:none;">
+
+  <!-- KPI Row -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="value kpi-white" id="totalCalls">-</div>
+      <div class="label">Total Calls</div>
+    </div>
+    <div class="kpi-card">
+      <div class="value kpi-green" id="tier3Count">-</div>
+      <div class="label">Tier 3 (High Priority)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="value kpi-yellow" id="tier2Count">-</div>
+      <div class="label">Tier 2 (Attorney Review)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="value kpi-red" id="avgDuration">-</div>
+      <div class="label">Avg Duration</div>
+    </div>
+    <div class="kpi-card">
+      <div class="value kpi-purple" id="transferRate">-</div>
+      <div class="label">Transfer Rate</div>
+    </div>
+  </div>
+
+  <!-- WINS Section -->
+  <div class="section-card" style="border-color:#1a3a2a;">
+    <div class="section-title"><span class="dot dot-green"></span>Wins This Week</div>
+    <div class="kpi-row" style="margin-bottom:0;">
+      <div class="kpi-card" style="border-color:#1a3a2a;">
+        <div class="value kpi-green" id="winHighValue">-</div>
+        <div class="label">High-Priority Cases Captured</div>
+      </div>
+      <div class="kpi-card" style="border-color:#1a3a2a;">
+        <div class="value kpi-green" id="winTransfers">-</div>
+        <div class="label">Successful Transfers</div>
+      </div>
+      <div class="kpi-card" style="border-color:#1a3a2a;">
+        <div class="value kpi-green" id="winPositive">-</div>
+        <div class="label">Positive Sentiment</div>
+      </div>
+      <div class="kpi-card" style="border-color:#1a3a2a;">
+        <div class="value kpi-green" id="winQualified">-</div>
+        <div class="label">Qualified Leads (T2+T3)</div>
+      </div>
+      <div class="kpi-card" style="border-color:#1a3a2a;">
+        <div class="value kpi-green" id="winRate">-</div>
+        <div class="label">Qualification Rate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sentiment Breakdown -->
+  <div class="section-card">
+    <div class="section-title"><span class="dot dot-blue"></span>Sentiment Breakdown</div>
+    <div class="sentiment-row">
+      <div>
+        <span class="stat" style="color:#34d399;" id="sentPos">-</span>&nbsp;
+        <span class="stat" id="sentNeut">-</span>&nbsp;
+        <span class="stat" style="color:#f87171;" id="sentNeg">-</span>
+      </div>
+      <div class="stat" style="color:#888;" id="repeatCallers"></div>
+    </div>
+  </div>
+
+  <!-- Tier & Classification Breakdown -->
+  <div class="section-card">
+    <div class="section-title"><span class="dot dot-purple"></span>Classification Breakdown</div>
+    <div class="tier-row" id="tierBreakdown"></div>
+  </div>
+
+  <!-- Success Patterns + Call Volume by Hour -->
+  <div class="two-col">
+    <div class="section-card">
+      <div class="section-title"><span class="dot dot-green"></span>Success Patterns</div>
+      <div id="successPatterns"></div>
+    </div>
+    <div class="section-card">
+      <div class="section-title"><span class="dot dot-green"></span>Qualified Call Rate by Hour (ET)</div>
+      <div class="bar-chart" id="hourlyChart"></div>
+      <div class="bar-note" id="hourlyNote"></div>
+    </div>
+  </div>
+
+  <!-- Top Repeat Callers -->
+  <div class="section-card">
+    <div class="section-title"><span class="dot dot-red"></span>Top Repeat Callers</div>
+    <div style="overflow-x:auto;">
+      <table class="repeat-table">
+        <thead>
+          <tr>
+            <th>Phone</th>
+            <th>Name</th>
+            <th>Calls</th>
+            <th>Qualified</th>
+            <th>Issue / Summary</th>
+          </tr>
+        </thead>
+        <tbody id="repeatBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Day filter + Calls Table -->
+  <div class="section-card">
+    <div class="section-title"><span class="dot dot-red"></span>All Calls (<span id="filteredCount">0</span>) &mdash; Click Call ID to Open in Retell</div>
+    <div class="day-tabs" id="dayTabs"></div>
+    <div style="overflow-x:auto;">
+      <table class="calls-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Call ID</th>
+            <th>Caller</th>
+            <th>Phone</th>
+            <th>Tier</th>
+            <th>Dur</th>
+            <th>Direction</th>
+            <th>Sentiment</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody id="callsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const INBOUND_AGENT = 'agent_e95d7a97a8f5dbf185dac088ad';
+const OUTBOUND_AGENT = 'agent_afdc067513475a417e5c870257';
+const AGENT_IDS = [INBOUND_AGENT, OUTBOUND_AGENT];
+
+let allCalls = [];
+let callsByDay = {};
+
+async function fetchCalls() {
+  // Calculate last 7 days in ET
+  const now = new Date();
+  const etFormatter = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const todayET = etFormatter.format(now);
+  const [m, d, y] = todayET.split('/');
+
+  // Today midnight ET
+  const todayMidnight = new Date(`${y}-${m}-${d}T00:00:00-04:00`);
+  // 7 days ago midnight ET
+  const weekAgo = new Date(todayMidnight.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const upperTs = todayMidnight.getTime();
+  const lowerTs = weekAgo.getTime();
+
+  document.getElementById('dateRange').textContent =
+    `Weekly Performance Report — ${weekAgo.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })} to ${new Date(upperTs - 1).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })}`;
+
+  try {
+    const resp = await fetch('/api/calls', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filter_criteria: {
+          agent_id: AGENT_IDS,
+          start_timestamp: {
+            lower_threshold: lowerTs,
+            upper_threshold: upperTs
+          }
+        },
+        limit: 1000,
+        sort_order: 'descending'
+      })
+    });
+
+    if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+    const data = await resp.json();
+    allCalls = data || [];
+
+    processAndRender();
+  } catch (err) {
+    document.getElementById('loadingState').innerHTML =
+      `<div style="color:#f87171;">Error fetching calls: ${err.message}</div>`;
+  }
+}
+
+function getPostCallField(call, field) {
+  const pca = call.call_analysis || call.opt_out_sensitive_data_storage ? null : null;
+  const custom = call.call_analysis?.custom_analysis_data || call.custom_analysis_data || {};
+  if (custom[field] !== undefined) return custom[field];
+  if (call.call_analysis && call.call_analysis[field] !== undefined) return call.call_analysis[field];
+  return null;
+}
+
+function extractTier(call) {
+  const custom = call.call_analysis?.custom_analysis_data || call.custom_analysis_data || {};
+  // Try multiple field names
+  for (const key of ['classification_tier', 'tier', 'case_tier', 'classification']) {
+    const val = custom[key] || (call.call_analysis && call.call_analysis[key]);
+    if (val) {
+      const s = String(val).toLowerCase();
+      if (s.includes('3') || s.includes('high')) return 'Tier 3';
+      if (s.includes('2') || s.includes('medium') || s.includes('attorney')) return 'Tier 2';
+      if (s.includes('1') || s.includes('low') || s.includes('decline')) return 'Tier 1';
+      if (s.includes('pi') || s.includes('wd') || s.includes('wrongful')) return 'PI/WD';
+      return val;
+    }
+  }
+  return 'Unknown';
+}
+
+function extractSentiment(call) {
+  const custom = call.call_analysis?.custom_analysis_data || call.custom_analysis_data || {};
+  for (const key of ['sentiment', 'caller_sentiment', 'overall_sentiment']) {
+    const val = custom[key] || (call.call_analysis && call.call_analysis[key]);
+    if (val) return String(val);
+  }
+  // Fallback to built-in
+  if (call.call_analysis?.user_sentiment) return call.call_analysis.user_sentiment;
+  return 'Unknown';
+}
+
+function extractCallerName(call) {
+  const custom = call.call_analysis?.custom_analysis_data || call.custom_analysis_data || {};
+  for (const key of ['caller_name', 'name', 'callerName', 'caller_full_name']) {
+    const val = custom[key] || (call.call_analysis && call.call_analysis[key]);
+    if (val && val !== 'Unknown' && val !== 'N/A') return val;
+  }
+  return '';
+}
+
+function extractSummary(call) {
+  const custom = call.call_analysis?.custom_analysis_data || call.custom_analysis_data || {};
+  for (const key of ['call_summary', 'summary', 'detailed_summary', 'brief_summary']) {
+    const val = custom[key] || (call.call_analysis && call.call_analysis[key]);
+    if (val) return String(val);
+  }
+  if (call.call_analysis?.call_summary) return call.call_analysis.call_summary;
+  return '';
+}
+
+function formatDuration(ms) {
+  if (!ms) return '-';
+  const sec = Math.round(ms / 1000);
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function getRetellLink(call) {
+  const callId = call.call_id || '';
+  return `https://dashboard.retellai.com/call-history?history=${callId}`;
+}
+
+function processAndRender() {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+
+  // Enrich calls
+  allCalls.forEach(c => {
+    c._tier = extractTier(c);
+    c._sentiment = extractSentiment(c);
+    c._callerName = extractCallerName(c);
+    c._summary = extractSummary(c);
+    c._direction = c.agent_id === OUTBOUND_AGENT ? 'Outbound' : 'Inbound';
+    c._duration = c.end_timestamp && c.start_timestamp ? c.end_timestamp - c.start_timestamp : 0;
+
+    // Day grouping
+    const dt = new Date(c.start_timestamp);
+    const dayKey = dt.toLocaleDateString('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+    if (!callsByDay[dayKey]) callsByDay[dayKey] = [];
+    callsByDay[dayKey].push(c);
+  });
+
+  renderKPIs(allCalls);
+  renderSentiment(allCalls);
+  renderTierBreakdown(allCalls);
+  renderSuccessPatterns(allCalls);
+  renderHourlyChart(allCalls);
+  renderRepeatCallers(allCalls);
+  renderDayTabs();
+  renderTable(allCalls, 'all');
+}
+
+function renderKPIs(calls) {
+  const total = calls.length;
+  const tier3 = calls.filter(c => c._tier === 'Tier 3').length;
+  const tier2 = calls.filter(c => c._tier === 'Tier 2').length;
+
+  const durations = calls.filter(c => c._duration > 0).map(c => c._duration);
+  const avgDur = durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
+
+  // Transfer rate: calls with transfer
+  const transferred = calls.filter(c => {
+    const custom = c.call_analysis?.custom_analysis_data || c.custom_analysis_data || {};
+    const outcome = custom.call_outcome || custom.outcome || c.call_analysis?.call_outcome || '';
+    return String(outcome).toLowerCase().includes('transfer');
+  }).length;
+  const transferRate = total > 0 ? ((transferred / total) * 100).toFixed(1) : '0.0';
+
+  document.getElementById('totalCalls').textContent = total;
+  document.getElementById('tier3Count').textContent = tier3;
+  document.getElementById('tier2Count').textContent = tier2;
+  document.getElementById('avgDuration').textContent = formatDuration(avgDur);
+  document.getElementById('transferRate').textContent = transferRate + '%';
+
+  // WINS
+  const positiveCalls = calls.filter(c => c._sentiment.toLowerCase().includes('pos')).length;
+  const qualifiedLeads = tier2 + tier3;
+  const qualRate = total > 0 ? ((qualifiedLeads / total) * 100).toFixed(1) : '0.0';
+
+  document.getElementById('winHighValue').textContent = tier3;
+  document.getElementById('winTransfers').textContent = transferred;
+  document.getElementById('winPositive').textContent = positiveCalls;
+  document.getElementById('winQualified').textContent = qualifiedLeads;
+  document.getElementById('winRate').textContent = qualRate + '%';
+}
+
+function renderSentiment(calls) {
+  const total = calls.length || 1;
+  const pos = calls.filter(c => c._sentiment.toLowerCase().includes('pos')).length;
+  const neg = calls.filter(c => c._sentiment.toLowerCase().includes('neg')).length;
+  const neut = total - pos - neg;
+
+  document.getElementById('sentPos').textContent = `${((pos/total)*100).toFixed(1)}% Positive`;
+  document.getElementById('sentNeut').textContent = `${((neut/total)*100).toFixed(1)}% Neutral`;
+  document.getElementById('sentNeg').textContent = `${((neg/total)*100).toFixed(1)}% Negative`;
+
+  // Repeat callers
+  const phones = calls.map(c => c.from_number || '').filter(Boolean);
+  const phoneCounts = {};
+  phones.forEach(p => { phoneCounts[p] = (phoneCounts[p] || 0) + 1; });
+  const repeats = Object.values(phoneCounts).filter(v => v > 1).length;
+  document.getElementById('repeatCallers').textContent = repeats > 0 ? `${repeats} repeat callers` : '';
+}
+
+function renderTierBreakdown(calls) {
+  const tiers = {};
+  calls.forEach(c => { tiers[c._tier] = (tiers[c._tier] || 0) + 1; });
+
+  const container = document.getElementById('tierBreakdown');
+  container.innerHTML = '';
+  const order = ['Tier 3', 'Tier 2', 'Tier 1', 'PI/WD', 'Unknown'];
+  const colors = { 'Tier 3': '#f87171', 'Tier 2': '#fbbf24', 'Tier 1': '#34d399', 'PI/WD': '#c084fc', 'Unknown': '#94a3b8' };
+
+  order.forEach(t => {
+    if (tiers[t]) {
+      const el = document.createElement('div');
+      el.className = 'tier-item';
+      el.innerHTML = `<span style="color:${colors[t]};font-weight:600;">${tiers[t]}</span> ${t}`;
+      container.appendChild(el);
+    }
+  });
+}
+
+function renderSuccessPatterns(calls) {
+  const container = document.getElementById('successPatterns');
+  container.innerHTML = '';
+  const total = calls.length || 1;
+
+  // Pattern 1: High-priority capture rate
+  const tier3 = calls.filter(c => c._tier === 'Tier 3');
+  const tier3Pos = tier3.filter(c => c._sentiment.toLowerCase().includes('pos')).length;
+
+  // Pattern 2: Long engagement calls (>3 min) that are T2/T3
+  const qualifiedLong = calls.filter(c => c._duration > 180000 && (c._tier === 'Tier 2' || c._tier === 'Tier 3'));
+  const longCalls = calls.filter(c => c._duration > 180000);
+
+  // Pattern 3: Outbound success
+  const outbound = calls.filter(c => c._direction === 'Outbound');
+  const outboundQualified = outbound.filter(c => c._tier === 'Tier 2' || c._tier === 'Tier 3');
+
+  // Pattern 4: Transfer success
+  const transferred = calls.filter(c => {
+    const custom = c.call_analysis?.custom_analysis_data || c.custom_analysis_data || {};
+    const outcome = custom.call_outcome || custom.outcome || c.call_analysis?.call_outcome || '';
+    return String(outcome).toLowerCase().includes('transfer');
+  });
+
+  const patterns = [
+    {
+      title: 'High-Priority Case Capture',
+      stat: `${tier3.length} Tier 3 cases captured`,
+      desc: tier3Pos > 0 ? `${tier3Pos} callers left with positive sentiment — strong intake experience.` : 'All high-priority cases documented for attorney review.'
+    },
+    {
+      title: 'Deep Engagement Conversions',
+      stat: `${qualifiedLong.length} of ${longCalls.length} long calls qualified`,
+      desc: longCalls.length > 0
+        ? `${((qualifiedLong.length / (longCalls.length || 1)) * 100).toFixed(0)}% conversion — calls over 3 min that became qualified leads.`
+        : 'No calls over 3 minutes this period.'
+    },
+    {
+      title: 'Outbound Lead Follow-up',
+      stat: outbound.length > 0 ? `${outboundQualified.length} of ${outbound.length} outbound qualified` : 'No outbound calls',
+      desc: outbound.length > 0
+        ? `${((outboundQualified.length / (outbound.length || 1)) * 100).toFixed(0)}% of outbound follow-ups converted to qualified leads.`
+        : 'No outbound calls made this period.'
+    },
+    {
+      title: 'Successful Staff Transfers',
+      stat: `${transferred.length} transfers completed`,
+      desc: `${((transferred.length / total) * 100).toFixed(1)}% of calls successfully connected to Bonnie, Oksana, or other staff.`
+    }
+  ];
+
+  patterns.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'pattern-card';
+    card.innerHTML = `<h4>${p.title}</h4><div class="pattern-stat">${p.stat}</div><div class="pattern-desc">${p.desc}</div>`;
+    container.appendChild(card);
+  });
+}
+
+function renderHourlyChart(calls) {
+  const chartContainer = document.getElementById('hourlyChart');
+  const noteContainer = document.getElementById('hourlyNote');
+  chartContainer.innerHTML = '';
+
+  // Count calls per hour (ET) and qualified per hour
+  const hourData = {};
+  for (let h = 7; h <= 20; h++) { hourData[h] = { total: 0, qualified: 0 }; }
+
+  calls.forEach(c => {
+    const dt = new Date(c.start_timestamp);
+    const hourStr = dt.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false });
+    const h = parseInt(hourStr);
+    if (hourData[h] !== undefined) {
+      hourData[h].total++;
+      if (c._tier === 'Tier 2' || c._tier === 'Tier 3') hourData[h].qualified++;
+    }
+  });
+
+  const hours = Object.keys(hourData).map(Number).sort((a, b) => a - b);
+  const maxTotal = Math.max(...hours.map(h => hourData[h].total), 1);
+
+  // Find peak qualified hours
+  let peakHour = 7, peakRate = 0;
+  hours.forEach(h => {
+    const rate = hourData[h].total > 0 ? hourData[h].qualified / hourData[h].total : 0;
+    if (rate > peakRate && hourData[h].total >= 2) { peakRate = rate; peakHour = h; }
+  });
+
+  hours.forEach(h => {
+    const d = hourData[h];
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+
+    const rate = d.total > 0 ? ((d.qualified / d.total) * 100).toFixed(0) : '0';
+    const heightPct = (d.total / maxTotal) * 100;
+    const isHigh = d.total > 0 && (d.qualified / d.total) >= 0.5;
+
+    col.innerHTML = `
+      <div class="bar-val">${d.total > 0 ? rate + '%' : ''}</div>
+      <div class="bar" style="height:${Math.max(heightPct, 3)}%;background:${isHigh ? '#34d399' : '#818cf8'};"></div>
+      <div class="bar-label">${h > 12 ? (h - 12) + 'p' : h + 'a'}</div>
+    `;
+    chartContainer.appendChild(col);
+  });
+
+  const peakLabel = peakHour > 12 ? (peakHour - 12) + 'pm' : peakHour + 'am';
+  noteContainer.innerHTML = `<span style="color:#34d399;">Green bars</span> = qualification rate >= 50%. Peak qualified hour: <strong>${peakLabel}</strong> (${(peakRate * 100).toFixed(0)}% qualified).`;
+}
+
+function renderRepeatCallers(calls) {
+  const tbody = document.getElementById('repeatBody');
+  tbody.innerHTML = '';
+
+  // Group by phone
+  const byPhone = {};
+  calls.forEach(c => {
+    const phone = c.from_number || c.to_number || '';
+    if (!phone) return;
+    if (!byPhone[phone]) byPhone[phone] = [];
+    byPhone[phone].push(c);
+  });
+
+  // Filter to repeat callers (2+), sort by count desc
+  const repeats = Object.entries(byPhone)
+    .filter(([, arr]) => arr.length >= 2)
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 10);
+
+  if (repeats.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:#888;text-align:center;padding:20px;">No repeat callers this week</td></tr>';
+    return;
+  }
+
+  repeats.forEach(([phone, phoneCalls]) => {
+    const tr = document.createElement('tr');
+    const name = phoneCalls.find(c => c._callerName)? phoneCalls.find(c => c._callerName)._callerName : '(unknown)';
+    const qualified = phoneCalls.filter(c => c._tier === 'Tier 2' || c._tier === 'Tier 3').length;
+    // Get latest summary
+    const sorted = phoneCalls.sort((a, b) => (b.start_timestamp || 0) - (a.start_timestamp || 0));
+    const latestSummary = sorted[0]._summary || '-';
+    const summaryShort = latestSummary.length > 100 ? latestSummary.slice(0, 100) + '...' : latestSummary;
+
+    tr.innerHTML = `
+      <td>${phone}</td>
+      <td>${name}</td>
+      <td>${phoneCalls.length}</td>
+      <td><span class="success-count">${qualified}</span></td>
+      <td class="summary-text">${summaryShort}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderDayTabs() {
+  const container = document.getElementById('dayTabs');
+  container.innerHTML = '';
+
+  // "All" tab
+  const allTab = document.createElement('button');
+  allTab.className = 'day-tab active';
+  allTab.textContent = `All (${allCalls.length})`;
+  allTab.onclick = () => {
+    document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+    allTab.classList.add('active');
+    renderTable(allCalls, 'all');
+  };
+  container.appendChild(allTab);
+
+  // Sort days descending
+  const days = Object.keys(callsByDay).sort((a, b) => new Date(b) - new Date(a));
+  days.forEach(day => {
+    const btn = document.createElement('button');
+    const dt = new Date(day);
+    btn.className = 'day-tab';
+    btn.textContent = `${dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' })} (${callsByDay[day].length})`;
+    btn.onclick = () => {
+      document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable(callsByDay[day], day);
+    };
+    container.appendChild(btn);
+  });
+}
+
+function renderTable(calls, label) {
+  const tbody = document.getElementById('callsBody');
+  tbody.innerHTML = '';
+  document.getElementById('filteredCount').textContent = calls.length;
+
+  // Sort by start time descending
+  const sorted = [...calls].sort((a, b) => (b.start_timestamp || 0) - (a.start_timestamp || 0));
+
+  sorted.forEach((c, i) => {
+    const tr = document.createElement('tr');
+
+    const tierClass = c._tier === 'Tier 3' ? 'tag-tier3' :
+                      c._tier === 'Tier 2' ? 'tag-tier2' :
+                      c._tier === 'Tier 1' ? 'tag-tier1' :
+                      c._tier === 'PI/WD' ? 'tag-pi' : 'tag-neut';
+
+    const sentClass = c._sentiment.toLowerCase().includes('pos') ? 'tag-pos' :
+                      c._sentiment.toLowerCase().includes('neg') ? 'tag-neg' : 'tag-neut';
+    const sentLabel = c._sentiment.toLowerCase().includes('pos') ? 'Pos' :
+                      c._sentiment.toLowerCase().includes('neg') ? 'Neg' : 'Neut';
+
+    const shortId = c.call_id ? '...' + c.call_id.slice(-10) : '-';
+    const phone = c.from_number || c.to_number || '-';
+    const summary = c._summary ? (c._summary.length > 140 ? c._summary.slice(0, 140) + '...' : c._summary) : '-';
+
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td><a class="call-id-link" href="${getRetellLink(c)}" target="_blank">${shortId}</a></td>
+      <td>${c._callerName || '-'}</td>
+      <td>${phone}</td>
+      <td><span class="tag ${tierClass}">${c._tier}</span></td>
+      <td>${formatDuration(c._duration)}</td>
+      <td>${c._direction}</td>
+      <td><span class="tag ${sentClass}">${sentLabel}</span></td>
+      <td class="summary-text">${summary}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Init
+fetchCalls();
+</script>
+</body>
+</html>
