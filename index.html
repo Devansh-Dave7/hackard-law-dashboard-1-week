@@ -631,11 +631,10 @@ function renderKPIs(calls) {
   const durations = calls.filter(c => c._duration > 0).map(c => c._duration);
   const avgDur = durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
 
-  // Transfer rate: calls with transfer
+  // Transfer rate: calls with call_transferred = true
   const transferred = calls.filter(c => {
     const custom = c.call_analysis?.custom_analysis_data || c.custom_analysis_data || {};
-    const outcome = custom.call_outcome || custom.outcome || c.call_analysis?.call_outcome || '';
-    return String(outcome).toLowerCase().includes('transfer');
+    return custom.call_transferred === true || String(custom.call_transferred).toLowerCase() === 'true';
   }).length;
   const transferRate = total > 0 ? ((transferred / total) * 100).toFixed(1) : '0.0';
 
@@ -714,8 +713,7 @@ function renderSuccessPatterns(calls) {
   // Pattern 4: Transfer success
   const transferred = calls.filter(c => {
     const custom = c.call_analysis?.custom_analysis_data || c.custom_analysis_data || {};
-    const outcome = custom.call_outcome || custom.outcome || c.call_analysis?.call_outcome || '';
-    return String(outcome).toLowerCase().includes('transfer');
+    return custom.call_transferred === true || String(custom.call_transferred).toLowerCase() === 'true';
   });
 
   const patterns = [
